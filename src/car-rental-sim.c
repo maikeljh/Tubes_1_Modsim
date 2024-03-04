@@ -76,17 +76,14 @@
 #define STATS_TIME_PERSON_TERMINAL_2     13
 #define STATS_TIME_PERSON_TERMINAL_3     14
 
-double bus_arrival_1, bus_arrival_2, bus_arrival_3; /* Time bus arrived at terminal 1, 2, or car rental */
-double loop_time;
+double bus_arrival_1 = 0, bus_arrival_2 = 0, bus_arrival_3 = 0; /* Time bus arrived at terminal 1, 2, or car rental */
+double loop_time = 0;
+
+FILE *outfile;
 
 void arrive(int arrival_type){
-    /**
-     * 
-    */
-    // int terminal;
-
     if (arrival_type < 4){
-        // passenger arrival
+        // Passenger arrival
         int dest_type = arrival_type == 3 ? (DESTINATION_PROBABILITY_TERMINAL_1, STREAM_DESTINATION) : 3;
 
         transfer[1] = sim_time;
@@ -97,63 +94,135 @@ void arrive(int arrival_type){
         case 1:
             event_schedule(sim_time + expon(INTERARRIVAL_TIME_RATE_1, STREAM_INTERARRIVAL_TERMINAL_1), arrival_type);
             list_file(LAST, TERMINAL_1_QUEUE);
+            timest((double) list_size[TERMINAL_1_QUEUE], STATS_NUMBER_IN_TERMINAL_1_QUEUE);
             break;
         case 2:
             event_schedule(sim_time + expon(INTERARRIVAL_TIME_RATE_2, STREAM_INTERARRIVAL_TERMINAL_2), arrival_type);
             list_file(LAST, TERMINAL_2_QUEUE);
+            timest((double) list_size[TERMINAL_2_QUEUE], STATS_NUMBER_IN_TERMINAL_2_QUEUE);
             break;
         case 3:
             event_schedule(sim_time + expon(INTERARRIVAL_TIME_RATE_3, STREAM_INTERARRIVAL_CAR_RENTAL), arrival_type);
             list_file(LAST, CAR_RENTAL_QUEUE);
+            timest((double) list_size[CAR_RENTAL_QUEUE], STATS_NUMBER_IN_TERMINAL_3_QUEUE);
             break;
         default:
             break;
         }
     } else {
-        // Bus arrival
-        // if (list_size[BUS_QUEUE] < BUS_CAPACITY){
-        //     // Load person to the bus
-        //     list_file(LAST, CAR_RENTAL_QUEUE);
-        // }
-
-        int load_time, unload_time;
-        
-        transfer[1] = sim_time;
-        // transfer[2] = dest_type;
+        int load_time, unload_time, person_time, destination_prob;
 
         switch (arrival_type)
         {
         case 4:
             if (list_size[BUS_QUEUE_TERMINAL_1]){
-                // unload
+                // Unload
                 list_remove(FIRST, BUS_QUEUE_TERMINAL_1);
-                
                 unload_time = uniform(UNLOAD_TIME_MIN, UNLOAD_TIME_MAX, STREAM_UNLOADING_TIMES);
+                person_time = (sim_time - transfer[1]) + transfer[3] + unload_time;
+                sampst(person_time, STATS_TIME_PERSON_TERMINAL_3);
 
                 event_schedule(sim_time + unload_time, arrival_type);
+                return;
             }
 
-            // load if capacity muat
-            if (list_size[BUS_QUEUE_TERMINAL_1] < BUS_CAPACITY){
+            // Load if bus size < capacity
+            if (list_size[BUS_QUEUE_TERMINAL_1] + list_size[BUS_QUEUE_TERMINAL_2] + list_size[BUS_QUEUE_CAR_RENTAL] < BUS_CAPACITY){
                 list_remove(FIRST, TERMINAL_1_QUEUE);
-                
-                sampst(sim_time - transfer[1], TERMINAL_1_QUEUE);
 
                 load_time = uniform(LOAD_TIME_MIN, LOAD_TIME_MAX, STREAM_LOADING_TIMES);
-
-                transfer[3] = sim_time + load_time - transfer[1];
-
+                sampst(sim_time + load_time - transfer[1], STATS_DELAY_IN_TERMINAL_1_QUEUE);
                 transfer[1] = sim_time + load_time;
+                transfer[2] = CAR_RENTAL;
+                transfer[3] = sim_time + load_time - transfer[1];
+                transfer[4] = TERMINAL_1;
 
-                list_file(LAST, BUS_QUEUE_TERMINAL_1);
+                list_file(LAST, BUS_QUEUE_CAR_RENTAL);
                 event_schedule(sim_time + load_time, arrival_type);
+                return;
             }
 
-            // if no loading and unloading after 5 mins, bus leaving
+            // If no loading and unloading after 5 mins, bus leaving
+            event_schedule(sim_time + STOP_TIME_MIN, EVENT_DEPARTURE_1);
+            break;
             
+        case 5:
+            if (list_size[BUS_QUEUE_TERMINAL_2]){
+                // Unload
+                list_remove(FIRST, BUS_QUEUE_TERMINAL_2);
+                unload_time = uniform(UNLOAD_TIME_MIN, UNLOAD_TIME_MAX, STREAM_UNLOADING_TIMES);
+                person_time = (sim_time - transfer[1]) + transfer[3] + unload_time;
+                sampst(person_time, STATS_TIME_PERSON_TERMINAL_3);
+
+                event_schedule(sim_time + unload_time, arrival_type);
+                return;
+            }
+
+            // Load if bus size < capacity
+            if (list_size[BUS_QUEUE_TERMINAL_1] + list_size[BUS_QUEUE_TERMINAL_2] + list_size[BUS_QUEUE_CAR_RENTAL] < BUS_CAPACITY){
+                list_remove(FIRST, TERMINAL_2_QUEUE);
+
+                load_time = uniform(LOAD_TIME_MIN, LOAD_TIME_MAX, STREAM_LOADING_TIMES);
+                sampst(sim_time + load_time - transfer[1], STATS_DELAY_IN_TERMINAL_2_QUEUE);
+                transfer[1] = sim_time + load_time;
+                transfer[2] = CAR_RENTAL;
+                transfer[3] = sim_time + load_time - transfer[1];
+                transfer[4] = TERMINAL_2;
+
+                list_file(LAST, BUS_QUEUE_CAR_RENTAL);
+                event_schedule(sim_time + load_time, arrival_type);
+                return;
+            }
+
+            // If no loading and unloading after 5 mins, bus leaving
             event_schedule(sim_time + STOP_TIME_MIN, EVENT_DEPARTURE_1);
             break;
         
+        case 6:
+            if (list_size[BUS_QUEUE_CAR_RENTAL]) {
+                // Unload passengers
+                list_remove(FIRST, BUS_QUEUE_CAR_RENTAL);
+                unload_time = uniform(UNLOAD_TIME_MIN, UNLOAD_TIME_MAX, STREAM_UNLOADING_TIMES);
+                person_time = (sim_time - transfer[1]) + transfer[3] + unload_time;
+
+                if (transfer[4] == 1) {
+                    sampst(person_time, STATS_TIME_PERSON_TERMINAL_1);
+                }
+                else {
+                    sampst(person_time, STATS_TIME_PERSON_TERMINAL_2);
+                }
+                
+                event_schedule(sim_time + unload_time, arrival_type);
+                return;
+            }
+
+            // Load if bus size < capacity
+            if (list_size[BUS_QUEUE_TERMINAL_1] + list_size[BUS_QUEUE_TERMINAL_2] + list_size[BUS_QUEUE_CAR_RENTAL] < BUS_CAPACITY){
+                list_remove(FIRST, CAR_RENTAL_QUEUE);
+
+                load_time = uniform(LOAD_TIME_MIN, LOAD_TIME_MAX, STREAM_LOADING_TIMES);
+                sampst(sim_time + load_time - transfer[1], STATS_DELAY_IN_TERMINAL_3_QUEUE);
+                transfer[1] = sim_time + load_time;
+                transfer[3] = sim_time + load_time - transfer[1];
+                transfer[4] = CAR_RENTAL;
+                
+                destination_prob = uniform(0, 1, STREAM_DESTINATION);
+
+                if (destination_prob <= DESTINATION_PROBABILITY_TERMINAL_1) {
+                    transfer[2] = TERMINAL_1;
+                } else {
+                    transfer[2] = TERMINAL_2;
+                }
+
+                list_file(LAST, BUS_QUEUE_CAR_RENTAL);
+                event_schedule(sim_time + load_time, arrival_type);
+                return;
+            }
+
+            // If no loading and unloading after 5 mins, bus leaving
+            event_schedule(sim_time + STOP_TIME_MIN, EVENT_DEPARTURE_1);
+            break;
+
         default:
             break;
         }
@@ -166,39 +235,74 @@ void depart(int departure_type){
     {
     case 7:
         event_schedule(sim_time + TIME_TERMINAL_1_2, departure_type);
+        sampst(sim_time - bus_arrival_1, STATS_BUS_STOP_AT_TERMINAL_1);
+        bus_arrival_2 = sim_time + TIME_TERMINAL_1_2;
         break;
     case 8:
         event_schedule(sim_time + TIME_TERMINAL_2_3, departure_type);
+        sampst(sim_time - bus_arrival_2, STATS_BUS_STOP_AT_TERMINAL_2);
+        bus_arrival_3 = sim_time + TIME_TERMINAL_2_3;
         break;
     case 9:
         event_schedule(sim_time + TIME_TERMINAL_3_1, departure_type);
+        sampst(sim_time - bus_arrival_3, STATS_BUS_STOP_AT_TERMINAL_3);
+        bus_arrival_1 = sim_time + TIME_TERMINAL_3_1;
+        sampst(sim_time - loop_time, STATS_TIME_LOOP);
+        loop_time = sim_time;
         break;
     
     default:
         break;
+
+    timest((double) (list_size[BUS_QUEUE_TERMINAL_1] + list_size[BUS_QUEUE_TERMINAL_2] + list_size[BUS_QUEUE_CAR_RENTAL]), STATS_NUMBER_ON_THE_BUS);
     }
 };
 
 
 void report(void) {
-    for (int i = 0; i < 3; i++){
-        // Report average and maximum number in each queue
+    fprintf(outfile, "Car Rental Simulation Report (80 hours)\n");
+    fprintf(outfile, "\n---------------------------------------\n");
 
-        // Report average and maximum delay in each queue
+    out_sampst(outfile, 1, 14);
+    out_timest(outfile, 1, 14);
+    // // Report average and maximum number in each queue
+    // fprintf(outfile, "\na. Number in each queue:\n");
+    // fprintf(outfile, "Terminal\tAverage\tMaximum\n");
+    // for (int i = 0; i < 3; i++){
+    //     // fprintf(outfile, "%d\t%.3f\t%d\n", (i+1), filest(1), filest(2));
+    // }
 
-        // Report average, maximum, and minimum time the bus stopped at each location
+    // // Report average and maximum delay in each queue
+    // fprintf(outfile, "\nb. Delay in each queue:\n");
+    // fprintf(outfile, "Terminal\tAverage\tMaximum\n");
+    // for (int i = 0; i < 3; i++){
+    //     // fprintf(outfile, "%d\t%.3f\t%d\n", (i+1), sampst(0.0, STATS_DELAY_IN_TERMINAL_1_QUEUE), filest(2));
+    // }
 
-        // Report average, maximum, and minimum time a person is in the system
-    }
+    // // Report average and maximum number on the bus
+    // fprintf(outfile, "\nc. Number on the bus:\n");
+    // fprintf(outfile, "Average\tMaximum\n");
+    
+    // // Report average, maximum, and minimum time the bus stopped at each location
+    // fprintf(outfile, "\nd. Time the bus is stopped at each location:\n");
+    // fprintf(outfile, "Terminal\tAverage\tMaximum\tMinimum\n");
 
-    // Report average and maximum number on the bus
+    // // Report average, maximum, and minimum time for the bus to make a loop
+    // fprintf(outfile, "\ne. Time for the bus to make a loop:\n");
+    // fprintf(outfile, "Average\tMaximum\tMinimum\n");
+    
+    // // Report average, maximum, and minimum time a person is in the system
+    // fprintf(outfile, "\nf. Time a person is in the system by arrival location:\n");
+    // fprintf(outfile, "Terminal\tAverage\tMaximum\tMinimum\n");
 
-    // Report average, maximum, and minimum time for the bus to make a loop
 }
 
 int main() {
     /* Initialize simlib */
     init_simlib();
+
+    /* Open output file */
+    outfile = fopen("car-rental-sim.out", "w");
 
     /* Set maxatr = max(maximum number of attributes per record, 4) */
     maxatr = 4; /* NEVER SET maxatr TO BE SMALLER THAN 4. */
@@ -259,6 +363,8 @@ int main() {
     /* If the event just executed was not the end-simulation event (type
        EVENT_END_SIMULATION), continue simulating.  Otherwise, end the
        simulation. */
+
+    fclose(outfile);
 
     return 0;
 }
