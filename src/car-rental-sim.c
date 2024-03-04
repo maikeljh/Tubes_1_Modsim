@@ -44,9 +44,9 @@
 #define TIME_TERMINAL_3_1                  (4.5/30)     /* Time to commute from car rental to air terminal 1 (hour) */
 #define BUS_CAPACITY                       20
 
-#define INTERARRIVAL_TIME_RATE_1 14              /* Rate per hour */
-#define INTERARRIVAL_TIME_RATE_2 10              /* Rate per hour */
-#define INTERARRIVAL_TIME_RATE_3 24              /* Rate per hour */
+#define INTERARRIVAL_TIME_RATE_1 (1/14.0)              /* Rate per hour */
+#define INTERARRIVAL_TIME_RATE_2 (1/10.0)              /* Rate per hour */
+#define INTERARRIVAL_TIME_RATE_3 (1/24.0)              /* Rate per hour */
 #define UNLOAD_TIME_MIN          (16/3600.0)     /* Minimum time to unload one person (hour) */
 #define UNLOAD_TIME_MAX          (24/3600.0)     /* Maximum time to unload one person (hour) */
 #define LOAD_TIME_MIN            (15/3600.0)     /* Minimum time to load one person (hour) */
@@ -88,6 +88,8 @@ void arrive(int arrival_type){
 
         transfer[1] = sim_time;
         transfer[2] = dest_type;
+
+        printf("Arrival %d: %.2f\n", arrival_type, sim_time);
         
         switch (arrival_type)
         {
@@ -112,10 +114,12 @@ void arrive(int arrival_type){
     } else {
         int load_time, unload_time, person_time, destination_prob;
 
+        printf("Arrival %d: %.2f\n", arrival_type, sim_time);
+
         switch (arrival_type)
         {
         case 4:
-            if (list_size[BUS_QUEUE_TERMINAL_1]){
+            if (list_size[BUS_QUEUE_TERMINAL_1] > 0){
                 // Unload
                 list_remove(FIRST, BUS_QUEUE_TERMINAL_1);
                 unload_time = uniform(UNLOAD_TIME_MIN, UNLOAD_TIME_MAX, STREAM_UNLOADING_TIMES);
@@ -127,7 +131,7 @@ void arrive(int arrival_type){
             }
 
             // Load if bus size < capacity
-            if (list_size[BUS_QUEUE_TERMINAL_1] + list_size[BUS_QUEUE_TERMINAL_2] + list_size[BUS_QUEUE_CAR_RENTAL] < BUS_CAPACITY){
+            if (list_size[BUS_QUEUE_TERMINAL_1] + list_size[BUS_QUEUE_TERMINAL_2] + list_size[BUS_QUEUE_CAR_RENTAL] < BUS_CAPACITY && list_size[TERMINAL_1_QUEUE] > 0){
                 list_remove(FIRST, TERMINAL_1_QUEUE);
 
                 load_time = uniform(LOAD_TIME_MIN, LOAD_TIME_MAX, STREAM_LOADING_TIMES);
@@ -147,7 +151,7 @@ void arrive(int arrival_type){
             break;
             
         case 5:
-            if (list_size[BUS_QUEUE_TERMINAL_2]){
+            if (list_size[BUS_QUEUE_TERMINAL_2] > 0){
                 // Unload
                 list_remove(FIRST, BUS_QUEUE_TERMINAL_2);
                 unload_time = uniform(UNLOAD_TIME_MIN, UNLOAD_TIME_MAX, STREAM_UNLOADING_TIMES);
@@ -159,7 +163,7 @@ void arrive(int arrival_type){
             }
 
             // Load if bus size < capacity
-            if (list_size[BUS_QUEUE_TERMINAL_1] + list_size[BUS_QUEUE_TERMINAL_2] + list_size[BUS_QUEUE_CAR_RENTAL] < BUS_CAPACITY){
+            if (list_size[BUS_QUEUE_TERMINAL_1] + list_size[BUS_QUEUE_TERMINAL_2] + list_size[BUS_QUEUE_CAR_RENTAL] < BUS_CAPACITY && list_size[TERMINAL_2_QUEUE] > 0){
                 list_remove(FIRST, TERMINAL_2_QUEUE);
 
                 load_time = uniform(LOAD_TIME_MIN, LOAD_TIME_MAX, STREAM_LOADING_TIMES);
@@ -175,11 +179,11 @@ void arrive(int arrival_type){
             }
 
             // If no loading and unloading after 5 mins, bus leaving
-            event_schedule(sim_time + STOP_TIME_MIN, EVENT_DEPARTURE_1);
+            event_schedule(sim_time + STOP_TIME_MIN, EVENT_DEPARTURE_2);
             break;
         
         case 6:
-            if (list_size[BUS_QUEUE_CAR_RENTAL]) {
+            if (list_size[BUS_QUEUE_CAR_RENTAL] > 0) {
                 // Unload passengers
                 list_remove(FIRST, BUS_QUEUE_CAR_RENTAL);
                 unload_time = uniform(UNLOAD_TIME_MIN, UNLOAD_TIME_MAX, STREAM_UNLOADING_TIMES);
@@ -197,7 +201,7 @@ void arrive(int arrival_type){
             }
 
             // Load if bus size < capacity
-            if (list_size[BUS_QUEUE_TERMINAL_1] + list_size[BUS_QUEUE_TERMINAL_2] + list_size[BUS_QUEUE_CAR_RENTAL] < BUS_CAPACITY){
+            if (list_size[BUS_QUEUE_TERMINAL_1] + list_size[BUS_QUEUE_TERMINAL_2] + list_size[BUS_QUEUE_CAR_RENTAL] < BUS_CAPACITY && list_size[CAR_RENTAL_QUEUE] > 0){
                 list_remove(FIRST, CAR_RENTAL_QUEUE);
 
                 load_time = uniform(LOAD_TIME_MIN, LOAD_TIME_MAX, STREAM_LOADING_TIMES);
@@ -220,7 +224,7 @@ void arrive(int arrival_type){
             }
 
             // If no loading and unloading after 5 mins, bus leaving
-            event_schedule(sim_time + STOP_TIME_MIN, EVENT_DEPARTURE_1);
+            event_schedule(sim_time + STOP_TIME_MIN, EVENT_DEPARTURE_3);
             break;
 
         default:
@@ -231,20 +235,22 @@ void arrive(int arrival_type){
 };
 
 void depart(int departure_type){
+
+    printf("Departure %d: %.2f\n", departure_type, sim_time);
     switch (departure_type)
     {
     case 7:
-        event_schedule(sim_time + TIME_TERMINAL_1_2, departure_type);
+        event_schedule(sim_time + TIME_TERMINAL_1_2, EVENT_ARRIVAL_BUS_2);
         sampst(sim_time - bus_arrival_1, STATS_BUS_STOP_AT_TERMINAL_1);
         bus_arrival_2 = sim_time + TIME_TERMINAL_1_2;
         break;
     case 8:
-        event_schedule(sim_time + TIME_TERMINAL_2_3, departure_type);
+        event_schedule(sim_time + TIME_TERMINAL_2_3, EVENT_ARRIVAL_BUS_3);
         sampst(sim_time - bus_arrival_2, STATS_BUS_STOP_AT_TERMINAL_2);
         bus_arrival_3 = sim_time + TIME_TERMINAL_2_3;
         break;
     case 9:
-        event_schedule(sim_time + TIME_TERMINAL_3_1, departure_type);
+        event_schedule(sim_time + TIME_TERMINAL_3_1, EVENT_ARRIVAL_BUS_1);
         sampst(sim_time - bus_arrival_3, STATS_BUS_STOP_AT_TERMINAL_3);
         bus_arrival_1 = sim_time + TIME_TERMINAL_3_1;
         sampst(sim_time - loop_time, STATS_TIME_LOOP);
@@ -311,6 +317,7 @@ int main() {
     event_schedule(expon(INTERARRIVAL_TIME_RATE_1, STREAM_INTERARRIVAL_TERMINAL_1), EVENT_ARRIVAL_PASSENGER_1);
     event_schedule(expon(INTERARRIVAL_TIME_RATE_1, STREAM_INTERARRIVAL_TERMINAL_2), EVENT_ARRIVAL_PASSENGER_2);
     event_schedule(expon(INTERARRIVAL_TIME_RATE_3, STREAM_INTERARRIVAL_CAR_RENTAL), EVENT_ARRIVAL_PASSENGER_3);
+    event_schedule(0, EVENT_DEPARTURE_3);
 
     /* Schedule the end of the simulation.  (This is needed for consistency of
        units.) */
@@ -346,13 +353,13 @@ int main() {
             arrive(6);
             break;
         case EVENT_DEPARTURE_1:
-            depart(1);
+            depart(7);
             break;
         case EVENT_DEPARTURE_2:
-            depart(2);
+            depart(8);
             break;
         case EVENT_DEPARTURE_3:
-            depart(3);
+            depart(9);
             break;
         case EVENT_END_SIMULATION:
             report();
