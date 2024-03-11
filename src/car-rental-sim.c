@@ -160,7 +160,7 @@ void arrive(int arrival_type){
                 event_schedule(sim_time, EVENT_DEPARTURE_1);
                 break;
             } else {
-                event_schedule(sim_time + STOP_TIME_MIN, EVENT_DEPARTURE_1);
+                event_schedule(sim_time + STOP_TIME_MIN - arrival_time_1, EVENT_DEPARTURE_1);
                 break;
             }
             break;
@@ -206,7 +206,7 @@ void arrive(int arrival_type){
                 event_schedule(sim_time, EVENT_DEPARTURE_2);
                 break;
             } else {
-                event_schedule(sim_time + STOP_TIME_MIN, EVENT_DEPARTURE_2);
+                event_schedule(sim_time + STOP_TIME_MIN - arrival_time_2, EVENT_DEPARTURE_2);
                 break;
             }
             break;
@@ -266,7 +266,7 @@ void arrive(int arrival_type){
                 event_schedule(sim_time, EVENT_DEPARTURE_3);
                 break;
             } else {
-                event_schedule(sim_time + STOP_TIME_MIN, EVENT_DEPARTURE_3);
+                event_schedule(sim_time + STOP_TIME_MIN - - arrival_time_3, EVENT_DEPARTURE_3);
                 break;
             }
             break;
