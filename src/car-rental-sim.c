@@ -89,7 +89,7 @@ void arrive(int arrival_type){
         transfer[1] = sim_time;
         transfer[2] = dest_type;
 
-        // printf("Arrival %d: %.2f\n", arrival_type, sim_time);
+        printf("Arrival %d: %.2f\n", arrival_type, sim_time);
         
         switch (arrival_type)
         {
@@ -114,7 +114,7 @@ void arrive(int arrival_type){
     } else {
         int load_time, unload_time, person_time, destination_prob;
 
-        // printf("Arrival %d: %.2f\n", arrival_type, sim_time);
+        printf("Arrival %d: %.2f\n", arrival_type, sim_time);
 
         switch (arrival_type)
         {
@@ -147,7 +147,13 @@ void arrive(int arrival_type){
             }
 
             // If no loading and unloading after 5 mins, bus leaving
-            event_schedule(sim_time + STOP_TIME_MIN, EVENT_DEPARTURE_1);
+            if (arrival_time_1 >= STOP_TIME_MIN) {
+                event_schedule(sim_time, EVENT_DEPARTURE_1);
+                break;
+            } else {
+                event_schedule(sim_time + STOP_TIME_MIN - arrival_time_1, EVENT_DEPARTURE_1);
+                break;
+            }
             break;
             
         case 5:
@@ -179,7 +185,13 @@ void arrive(int arrival_type){
             }
 
             // If no loading and unloading after 5 mins, bus leaving
-            event_schedule(sim_time + STOP_TIME_MIN, EVENT_DEPARTURE_2);
+            if (arrival_time_2 >= STOP_TIME_MIN) {
+                event_schedule(sim_time, EVENT_DEPARTURE_2);
+                break;
+            } else {
+                event_schedule(sim_time + STOP_TIME_MIN - arrival_time_2, EVENT_DEPARTURE_2);
+                break;
+            }
             break;
         
         case 6:
@@ -224,7 +236,13 @@ void arrive(int arrival_type){
             }
 
             // If no loading and unloading after 5 mins, bus leaving
-            event_schedule(sim_time + STOP_TIME_MIN, EVENT_DEPARTURE_3);
+            if (arrival_time_3 >= STOP_TIME_MIN) {
+                event_schedule(sim_time, EVENT_DEPARTURE_3);
+                break;
+            } else {
+                event_schedule(sim_time + STOP_TIME_MIN - - arrival_time_3, EVENT_DEPARTURE_3);
+                break;
+            }
             break;
 
         default:
@@ -236,7 +254,7 @@ void arrive(int arrival_type){
 
 void depart(int departure_type){
 
-    // printf("Departure %d: %.2f\n", departure_type, sim_time);
+    printf("Departure %d: %.2f\n", departure_type, sim_time);
     switch (departure_type)
     {
     case 7:
@@ -271,36 +289,6 @@ void report(void) {
 
     out_sampst(outfile, 1, 14);
     out_timest(outfile, 1, 14);
-    // // Report average and maximum number in each queue
-    // fprintf(outfile, "\na. Number in each queue:\n");
-    // fprintf(outfile, "Terminal\tAverage\tMaximum\n");
-    // for (int i = 0; i < 3; i++){
-    //     // fprintf(outfile, "%d\t%.3f\t%d\n", (i+1), filest(1), filest(2));
-    // }
-
-    // // Report average and maximum delay in each queue
-    // fprintf(outfile, "\nb. Delay in each queue:\n");
-    // fprintf(outfile, "Terminal\tAverage\tMaximum\n");
-    // for (int i = 0; i < 3; i++){
-    //     // fprintf(outfile, "%d\t%.3f\t%d\n", (i+1), sampst(0.0, STATS_DELAY_IN_TERMINAL_1_QUEUE), filest(2));
-    // }
-
-    // // Report average and maximum number on the bus
-    // fprintf(outfile, "\nc. Number on the bus:\n");
-    // fprintf(outfile, "Average\tMaximum\n");
-    
-    // // Report average, maximum, and minimum time the bus stopped at each location
-    // fprintf(outfile, "\nd. Time the bus is stopped at each location:\n");
-    // fprintf(outfile, "Terminal\tAverage\tMaximum\tMinimum\n");
-
-    // // Report average, maximum, and minimum time for the bus to make a loop
-    // fprintf(outfile, "\ne. Time for the bus to make a loop:\n");
-    // fprintf(outfile, "Average\tMaximum\tMinimum\n");
-    
-    // // Report average, maximum, and minimum time a person is in the system
-    // fprintf(outfile, "\nf. Time a person is in the system by arrival location:\n");
-    // fprintf(outfile, "Terminal\tAverage\tMaximum\tMinimum\n");
-
 }
 
 int main() {
