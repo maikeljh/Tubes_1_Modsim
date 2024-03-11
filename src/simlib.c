@@ -529,19 +529,42 @@ void out_sampst(FILE *unit, int lowvar, int highvar) {
 
   if (lowvar > highvar || lowvar > MAX_SVAR || highvar > MAX_SVAR) return;
 
-  fprintf(unit, "\n sampst                         Number");
-  fprintf(unit, "\nvariable                          of");
-  fprintf(unit, "\n number       Average           values          Maximum");
+  fprintf(unit, "\n         sampst                                     Number");
+  fprintf(unit, "\n        variable                                      of");
+  fprintf(unit, "\n          name                    Average           values          Maximum");
   fprintf(unit, "          Minimum");
-  fprintf(unit, "\n___________________________________");
-  fprintf(unit, "_____________________________________");
+  fprintf(unit, "\n_____________________________________________");
+  fprintf(unit, "_______________________________________________");
   for (ivar = lowvar; ivar <= highvar; ++ivar) {
-    fprintf(unit, "\n\n%5d", ivar);
+    if (ivar == 4) {
+      fprintf(unit, "\n\nDELAY_IN_TERMINAL_1_QUEUE");
+    } else if (ivar == 5) {
+      fprintf(unit, "\n\nDELAY_IN_TERMINAL_2_QUEUE");
+    } else if (ivar == 6) {
+      fprintf(unit, "\n\nDELAY_IN_TERMINAL_3_QUEUE");
+    } else if (ivar == 8) {
+      fprintf(unit, "\n\nBUS_STOP_AT_TERMINAL_1   ");
+    } else if (ivar == 9) {
+      fprintf(unit, "\n\nBUS_STOP_AT_TERMINAL_2   ");
+    } else if (ivar == 10) {
+      fprintf(unit, "\n\nBUS_STOP_AT_TERMINAL_3   ");
+    } else if (ivar == 11) {
+      fprintf(unit, "\n\nTIME_LOOP                ");
+    } else if (ivar == 12) {
+      fprintf(unit, "\n\nTIME_PERSON_TERMINAL_1   ");
+    } else if (ivar == 13) {
+      fprintf(unit, "\n\nTIME_PERSON_TERMINAL_2   ");
+    } else if (ivar == 14) {
+      fprintf(unit, "\n\nTIME_PERSON_TERMINAL_3   ");
+    } else {
+      continue;
+    }
+
     sampst(0.00, -ivar);
     for (iatrr = 1; iatrr <= 4; ++iatrr) pprint_out(unit, iatrr);
   }
-  fprintf(unit, "\n___________________________________");
-  fprintf(unit, "_____________________________________\n\n\n");
+  fprintf(unit, "\n_____________________________________________");
+  fprintf(unit, "_______________________________________________\n\n\n");
 }
 
 void out_timest(FILE *unit, int lowvar, int highvar) {
@@ -552,16 +575,27 @@ void out_timest(FILE *unit, int lowvar, int highvar) {
 
   if (lowvar > highvar || lowvar > TIM_VAR || highvar > TIM_VAR) return;
 
-  fprintf(unit, "\n  timest");
-  fprintf(unit, "\n variable       Time");
-  fprintf(unit, "\n  number       average          Maximum          Minimum");
-  fprintf(unit, "\n________________________________________________________");
+  fprintf(unit, "\n         timest");
+  fprintf(unit, "\n        variable                    Time");
+  fprintf(unit, "\n          name                     average          Maximum          Minimum");
+  fprintf(unit, "\n____________________________________________________________________________");
   for (ivar = lowvar; ivar <= highvar; ++ivar) {
-    fprintf(unit, "\n\n%5d", ivar);
+    if (ivar == 1) {
+      fprintf(unit, "\n\nNUMBER_IN_TERMINAL_1_QUEUE");
+    } else if (ivar == 2) {
+      fprintf(unit, "\n\nNUMBER_IN_TERMINAL_2_QUEUE");
+    } else if (ivar == 3) {
+      fprintf(unit, "\n\nNUMBER_IN_TERMINAL_3_QUEUE");
+    } else if (ivar == 7) {
+      fprintf(unit, "\n\nNUMBER_ON_THE_BUS         ");
+    } else {
+      continue;
+    }
+
     timest(0.00, -ivar);
     for (iatrr = 1; iatrr <= 3; ++iatrr) pprint_out(unit, iatrr);
   }
-  fprintf(unit, "\n________________________________________________________");
+  fprintf(unit, "\n____________________________________________________________________________");
   fprintf(unit, "\n\n\n");
 }
 
